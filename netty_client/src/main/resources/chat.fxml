@@ -19,7 +19,7 @@
                   <children>
                      <HBox spacing="10.0">
                         <children>
-                           <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="46.0">
+                           <Button fx:id="clientUpButton" mnemonicParsing="false" onAction="#onClientUpButtonClicked" prefHeight="26.0" prefWidth="46.0">
                               <graphic>
                                  <ImageView fitHeight="20.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
@@ -57,7 +57,7 @@
                   <children>
                      <HBox spacing="10.0">
                         <children>
-                           <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="46.0">
+                           <Button mnemonicParsing="false" onAction="#onUpCloudButtonClicked" prefHeight="26.0" prefWidth="46.0">
                               <graphic>
                                  <ImageView fitHeight="20.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
@@ -65,7 +65,7 @@
                                     </image>
                                  </ImageView>
                               </graphic></Button>
-                           <TextField prefHeight="26.0" prefWidth="269.0" />
+                           <TextField fx:id="cloudPath" prefHeight="26.0" prefWidth="269.0" />
                         </children>
                      </HBox>
                      <TreeView fx:id="cloudTreeView" prefHeight="392.0" prefWidth="298.0" />

@@ -29,15 +29,13 @@ public class Controller implements Initializable {
     private static String CLOUD_DIR = "netty_server/root";
     private static byte[] buffer = new byte[1024];
 
+    private String currentClientDir;
+
     @FXML
     private TreeView <String> clientFileTree;
 
     @FXML
     private TreeView <String> cloudTreeView;
-//    @FXML
-//    public ListView<String> listView;
-//    @FXML
-//    public TextField input;
     private ObjectDecoderInputStream is;
     private ObjectEncoderOutputStream os;
 
@@ -45,7 +43,13 @@ public class Controller implements Initializable {
     private TextField clientPath;
 
     @FXML
+    private TextField cloudPath;
+
+    @FXML
     private Button sendToCloudButton;
+
+    @FXML
+    private Button clientUpButton;
 
     @FXML
     public void send(ActionEvent actionEvent) throws Exception {
@@ -77,9 +81,8 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            clientPath.setText(Paths.get(ROOT_DIR).toAbsolutePath().toString());
-            loadTree(ROOT_DIR,clientFileTree);
-            loadTree(CLOUD_DIR,cloudTreeView);
+            loadClientPart(ROOT_DIR);
+            loadCloudPart(CLOUD_DIR);
             Socket socket = new Socket("localhost", 8189);
             os = new ObjectEncoderOutputStream(socket.getOutputStream());
             is = new ObjectDecoderInputStream(socket.getInputStream());
@@ -113,7 +116,7 @@ public class Controller implements Initializable {
                                     alertMessage = "Ошибка!Файл не добавлен";
                                 }
                                 Platform.runLater(() -> {
-                                    loadTree(CLOUD_DIR,cloudTreeView);
+                                    loadCloudPart(CLOUD_DIR);
                                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                     alert.setContentText(alertMessage);
                                     alert.showAndWait();
@@ -132,14 +135,31 @@ public class Controller implements Initializable {
         }
     }
 
-    private void loadTree (String rootPath, TreeView <String> tree) {
+    private void loadClientPart (String rootPath) {
+        loadTree(rootPath, clientFileTree,clientPath);
+    }
+
+    private void loadCloudPart (String rootPath) {
+        loadTree(rootPath, cloudTreeView, cloudPath);
+    }
+
+    private void loadTree (String rootPath, TreeView <String> tree, TextField currentPath) {
         TreeItem <String> root = new TreeItem<>(Paths.get(rootPath).getFileName().toString());
+
         tree.setRoot(root);
         findChildren (root,rootPath);
+        root.setExpanded(true);
+        currentPath.setText(rootPath);
+
 
         tree.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
-                System.err.println("Gfgrf");
+                if (tree.getSelectionModel().getSelectedItem() != null) {
+                    String file = tree.getSelectionModel().getSelectedItem().getValue();
+                    if (Files.isDirectory(Paths.get(currentPath.getText(), file))) {
+                        loadTree(Paths.get(currentPath.getText(), file).toString(),tree,currentPath);
+                    }
+                }
             }
         });
     }
@@ -207,5 +227,21 @@ public class Controller implements Initializable {
     @FXML
     private void onLoadFromCloudButtonClicked () {
 
+    }
+
+    @FXML
+    private void onClientUpButtonClicked () throws IOException {
+        if (!Paths.get(clientPath.getText()).toString().equals(ROOT_DIR)) {
+            loadClientPart(Paths.get(clientPath.getText()).getParent().toString());
+        }
+
+
+    }
+
+    @FXML
+    private void onUpCloudButtonClicked () {
+        if (!Paths.get(cloudPath.getText()).toString().equals(CLOUD_DIR)) {
+            loadCloudPart(Paths.get(cloudPath.getText()).getParent().toString());
+        }
     }
 }
