@@ -1,22 +1,34 @@
 package com.liyakarimova.commands;
 
-import com.liyakarimova.commands.Command;
-import com.liyakarimova.commands.CommandType;
+import java.util.List;
 
 public class ListResponseCommand  extends Command {
 
-    private String fileList;
+    private List<String> filesList;
+
+    private List <String> directoriesList;
+
+
+
 
     @Override
     public CommandType getType() {
         return CommandType.LIST_RESPONSE;
     }
 
-    public String getFileList() {
-        return fileList;
+    public List<String> getFilesList() {
+        return filesList;
     }
 
-    public void setFileList(String fileList) {
-        this.fileList = fileList;
+    public void setFilesList(List<String> filesList) {
+        this.filesList = filesList;
+    }
+
+    public List<String> getDirectoriesList() {
+        return directoriesList;
+    }
+
+    public void setDirectoriesList(List<String> directoriesList) {
+        this.directoriesList = directoriesList;
     }
 }

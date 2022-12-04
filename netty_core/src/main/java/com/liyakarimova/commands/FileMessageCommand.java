@@ -1,35 +1,33 @@
 package com.liyakarimova.commands;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class FileMessageCommand extends Command {
 
-    private String filePath;
-    private String toDir;
+    private final String name;
+    private final byte[] bytes;
 
-    public FileMessageCommand(String filePath, String toDir) {
-        this.filePath = filePath;
-        this.toDir = toDir;
+    public FileMessageCommand(String name, byte [] bytes) throws IOException {
+        this.name = name;
+        this.bytes = bytes;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+
 
     @Override
     public CommandType getType() {
         return CommandType.FILE_MESSAGE;
     }
 
-    public String getFilePath() {
-        return filePath;
-    }
 
-    public String getToDir() {
-        return toDir;
-    }
-
-    //    public Path getFilePath() {
-//        return filePath;
-//    }
-//
-//    public Path getToDir() {
-//        return toDir;
-//    }
 }

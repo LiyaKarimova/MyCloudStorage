@@ -1,9 +1,6 @@
 package com.liyakarimova;
 
-import com.liyakarimova.commands.Command;
-import com.liyakarimova.commands.FileMessageCommand;
-import com.liyakarimova.commands.FileRequestCommand;
-import com.liyakarimova.commands.ListResponseCommand;
+import com.liyakarimova.commands.*;
 import com.liyakarimova.services.FileMessageService;
 import com.liyakarimova.services.FilesInDirService;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,6 +14,12 @@ import java.nio.file.Paths;
 public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
 
     private static final Path ROOT = Paths.get("netty_server", "root");
+
+    private Path currentPath;
+
+    public FileMessageHandler() {
+        this.currentPath = ROOT;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command cmd) throws Exception {
@@ -33,23 +36,42 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
         } else {
             switch (cmd.getType()) {
                 case LIST_REQUEST -> {
-                    log.info("Server started list request comand");
+                    log.info("Server started list request command");
                     ListResponseCommand listResponseCommand = new ListResponseCommand();
                     FilesInDirService filesInDirService = new FilesInDirService();
-                    listResponseCommand.setFileList(filesInDirService.findAllFilesInDir(ROOT));
+                    listResponseCommand.setFilesList(filesInDirService.findAllFilesInDir(ROOT));
+                    listResponseCommand.setDirectoriesList(filesInDirService.findAllDirInDir(ROOT));
                     ctx.writeAndFlush(listResponseCommand);
                     log.info("Response list command sent");
 
                 }
 
                 case FILE_MESSAGE -> {
-
                     FileMessageCommand fileMessageCommand = (FileMessageCommand)cmd;
                     log.info("Server started file message command");
                     FileMessageService fileMessageService = new FileMessageService();
                     FileRequestCommand fileRequestCommand = new FileRequestCommand();
-                    fileRequestCommand.setFileMovedCorrect(fileMessageService.sendFile(Paths.get(fileMessageCommand.getFilePath()),Paths.get(fileMessageCommand.getToDir())));
-                    ctx.writeAndFlush(new FileRequestCommand());
+                    //System.err.println(fileMessageService.sendFile(fileMessageCommand.getName(), fileMessageCommand.getBytes(), currentPath.toString()));
+                    fileRequestCommand.setFileMovedCorrect(fileMessageService.sendFile(fileMessageCommand.getName(),fileMessageCommand.getBytes(),currentPath.toString()));
+                    ctx.writeAndFlush(fileRequestCommand);
+                }
+
+                case PATH_REQUEST -> {
+                    log.info("Server PATH REQUEST COMMAND. Current dir: " + currentPath.toString());
+                    PathResponseCommand pathResponseCommand = new PathResponseCommand();
+                    pathResponseCommand.setCurrentPath(currentPath.toString());
+                    ctx.writeAndFlush(pathResponseCommand);
+                    log.info(pathResponseCommand.getCurrentPath().toString());
+
+                }
+
+                case PATH_UP_REQUEST -> {
+                    if (!(currentPath.equals(ROOT))) {
+                        currentPath = currentPath.getParent();
+                        PathResponseCommand pathResponseCommand = new PathResponseCommand();
+                        pathResponseCommand.setCurrentPath(currentPath.toString());
+                        ctx.writeAndFlush(pathResponseCommand);
+                    }
                 }
 
             }

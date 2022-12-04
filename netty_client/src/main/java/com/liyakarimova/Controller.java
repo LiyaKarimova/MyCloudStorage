@@ -1,9 +1,6 @@
 package com.liyakarimova;
 
-import com.liyakarimova.commands.Command;
-import com.liyakarimova.commands.FileMessageCommand;
-import com.liyakarimova.commands.FileRequestCommand;
-import com.liyakarimova.commands.ListRequestCommand;
+import com.liyakarimova.commands.*;
 import io.netty.handler.codec.serialization.ObjectDecoderInputStream;
 import io.netty.handler.codec.serialization.ObjectEncoderOutputStream;
 import javafx.application.Platform;
@@ -11,6 +8,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.util.Callback;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -19,6 +17,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.ResourceBundle;
 
 
@@ -26,13 +25,14 @@ import java.util.ResourceBundle;
 public class Controller implements Initializable {
 
     private static String ROOT_DIR = "netty_client/root";
-    private static String CLOUD_DIR = "netty_server/root";
+    //private static String CLOUD_DIR = "netty_server/root";
+    private String currentRootCloudPath;
     private static byte[] buffer = new byte[1024];
 
     private String currentClientDir;
 
     @FXML
-    private TreeView <String> clientFileTree;
+    private TreeView <Path> clientFileTree;
 
     @FXML
     private TreeView <String> cloudTreeView;
@@ -51,6 +51,10 @@ public class Controller implements Initializable {
     @FXML
     private Button clientUpButton;
 
+    private List <String> currentCloudPathChilds;
+
+    private List <String> currentCloudPathDirChild;
+
     @FXML
     public void send(ActionEvent actionEvent) throws Exception {
         //String fileName = input.getText();
@@ -66,23 +70,23 @@ public class Controller implements Initializable {
     }
 
 
-    @FXML
-    private void onListRequestButtonClicked () {
-        try {
-            Command listRequestCommand = new ListRequestCommand();
-            os.writeObject(listRequestCommand);
-            os.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
+//    @FXML
+//    private void onListRequestButtonClicked () {
+//        try {
+//            Command listRequestCommand = new ListRequestCommand();
+//            os.writeObject(listRequestCommand);
+//            os.flush();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            loadClientPart(ROOT_DIR);
-            loadCloudPart(CLOUD_DIR);
+            loadClientPart(Paths.get(ROOT_DIR));
+
             Socket socket = new Socket("localhost", 8189);
             os = new ObjectEncoderOutputStream(socket.getOutputStream());
             is = new ObjectDecoderInputStream(socket.getInputStream());
@@ -95,12 +99,13 @@ public class Controller implements Initializable {
                         //ListRequestCommand msg = (ListRequestCommand) is.readObject();
                         Command msg = (Command) is.readObject();
                         System.err.println("Server command type: " + msg.getType());
-//                        // TODO: 23.09.2021 Разработка системы команд
                         switch (msg.getType()) {
                             case LIST_RESPONSE -> {
-//                                String list = ((ListResponseCommand) msg).getFileList();
-//                                Platform.runLater(() ->
-                                //input.setText("Список файлов в папке root: " + list));
+                                currentCloudPathChilds = ((ListResponseCommand) msg).getFilesList();
+
+                                Platform.runLater(() -> {
+                                    loadCloudPart();
+                                });
                             }
                             case FILE_MESSAGE -> {
 
@@ -110,16 +115,26 @@ public class Controller implements Initializable {
                                 log.info("Client received FILE REQUEST COMMAND");
                                 FileRequestCommand fileRequestCommand = (FileRequestCommand)msg;
                                 String alertMessage;
+                                System.err.println(fileRequestCommand.isFileMovedCorrect());
                                 if (fileRequestCommand.isFileMovedCorrect()) {
                                     alertMessage = "Файл успешно добавлен в облако";
                                 } else {
                                     alertMessage = "Ошибка!Файл не добавлен";
                                 }
                                 Platform.runLater(() -> {
-                                    loadCloudPart(CLOUD_DIR);
+                                    updateCloudPart();
                                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                     alert.setContentText(alertMessage);
                                     alert.showAndWait();
+                                });
+                            }
+
+                            case PATH_RESPONSE -> {
+                                PathResponseCommand pathResponseCommand = (PathResponseCommand) msg;
+                                currentRootCloudPath = pathResponseCommand.getCurrentPath();
+                                log.info("PATH RESPONSE COMMAND: " + pathResponseCommand.getCurrentPath() );
+                                Platform.runLater(() -> {
+                                    cloudPath.setText(currentRootCloudPath);
                                 });
                             }
                         }
@@ -135,75 +150,134 @@ public class Controller implements Initializable {
         }
     }
 
-    private void loadClientPart (String rootPath) {
-        loadTree(rootPath, clientFileTree,clientPath);
+    @FXML
+    private void onLoginButtonClicked () {
+        requestCurrentCloudDir();
+        requestList();
     }
 
-    private void loadCloudPart (String rootPath) {
-        loadTree(rootPath, cloudTreeView, cloudPath);
+    private void requestCurrentCloudDir () {
+        Command pathRequestCommand = new PathRequestCommand();
+        try {
+            os.writeObject(pathRequestCommand);
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    private void loadTree (String rootPath, TreeView <String> tree, TextField currentPath) {
-        TreeItem <String> root = new TreeItem<>(Paths.get(rootPath).getFileName().toString());
+    private void requestList () {
+        try {
+            Command listRequestCommand = new ListRequestCommand();
+            os.writeObject(listRequestCommand);
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
+    private void loadClientPart (Path rootPath) {
+        loadClientTree(rootPath, clientFileTree,clientPath);
+    }
+
+    private void updateCloudPart () {
+        requestCurrentCloudDir();
+        requestList();
+        loadCloudPart();
+    }
+
+    private void loadCloudPart () {
+        TreeItem <String> root = new TreeItem<>(Paths.get(currentRootCloudPath).getFileName().toString());
+        cloudTreeView.setRoot(root);
+
+        for (String s:currentCloudPathChilds) {
+            TreeItem <String> file = new TreeItem<>(s);
+            root.getChildren().add(file);
+        }
+
+
+
+    }
+
+    private void loadClientTree(Path rootPath, TreeView <Path> tree, TextField currentPath) {
+        tree.setCellFactory(new Callback<TreeView<Path>, TreeCell<Path>>() {
+            @Override
+            public TreeCell<Path> call(TreeView<Path> param) {
+                TreeCell <Path> cell = new TreeCell<>() {
+                    @Override
+                    protected void updateItem(Path item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null || item.getFileName() == null) {
+                            setText("");
+                        } else {
+                            setText(item.getFileName().toString());
+                        }
+                    }
+                };
+                return cell;
+            }
+
+
+
+        });
+        TreeItem <Path> root = new TreeItem<>(rootPath);
         tree.setRoot(root);
         findChildren (root,rootPath);
         root.setExpanded(true);
-        currentPath.setText(rootPath);
-
+        currentPath.setText(rootPath.toString());
 
         tree.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 if (tree.getSelectionModel().getSelectedItem() != null) {
-                    String file = tree.getSelectionModel().getSelectedItem().getValue();
-                    if (Files.isDirectory(Paths.get(currentPath.getText(), file))) {
-                        loadTree(Paths.get(currentPath.getText(), file).toString(),tree,currentPath);
+                    Path file = tree.getSelectionModel().getSelectedItem().getValue();
+                    if (Files.isDirectory(file)) {
+                        loadClientTree(file,tree,currentPath);
                     }
                 }
             }
         });
     }
 
-    private void loadClientTree(String rootPath) throws IOException {
-        TreeItem <String> root = new TreeItem<>(Paths.get(rootPath).getFileName().toString());
-        clientFileTree.setRoot(root);
-        findChildren (root,rootPath);
-
-        clientFileTree.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                System.err.println("Gfgrf");
-            }
-        });
-//        Files.list (Paths.get(ROOT_DIR)).forEach(f -> {
-//            TreeItem <String> file = new TreeItem<>(f.getFileName().toString());
-//            root.getChildren().add(file);
-//        });
-//        Files.list(ROOT_DIR)
-//        listView.getItems().addAll(
-//                Files.list(Paths.get(ROOT_DIR))
-//                    .map(p -> p.getFileName().toString())
-//                    .collect(Collectors.toList())
-//        );
-//        listView.setOnMouseClicked(e -> {
-//            if (e.getClickCount() == 2) {
-//                String item = listView.getSelectionModel().getSelectedItem();
-//                input.setText(item);
-//            }
-//        });
-    }
-
-    private void findChildren (TreeItem <String> treeItem, String path)  {
+    private void findChildren (TreeItem <Path> treeItem, Path path)  {
         try {
-            Files.list (Paths.get(path)).forEach(f -> {
-                TreeItem <String> file = new TreeItem<>(f.getFileName().toString());
+            Files.list (path).forEach(f -> {
+                TreeItem <Path> file = new TreeItem<>(f);
                 treeItem.getChildren().add(file);
                 if (Files.isDirectory(f)) {
-                    findChildren(file,f.toString());
+                    findChildren(file,f);
                 }
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void loadCloudTree (String currentPath, List<String> fileList) {
+        TreeItem <String> root = new TreeItem<>(currentPath);
+        cloudTreeView.setRoot(root);
+        root.setExpanded(true);
+        cloudPath.setText(currentPath);
+
+        findCloudChild(currentPath);
+
+        for (String s:currentCloudPathChilds) {
+            TreeItem <String> file = new TreeItem<>(s);
+            root.getChildren().add(file);
+        }
+
+    }
+
+    private void findCloudChild (String currentPath) {
+        try {
+            ListRequestCommand listRequestCommand = new ListRequestCommand();
+            listRequestCommand.setPath(currentPath);
+            os.writeObject(listRequestCommand);
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @FXML
@@ -214,13 +288,15 @@ public class Controller implements Initializable {
     @FXML
     private void onSendToCloudButtonClicked () {
         try {
-            String file = clientFileTree.getSelectionModel().getSelectedItem().getValue();
-            Command fileMessageCommand = new FileMessageCommand((Paths.get(ROOT_DIR,file)).toString(), Paths.get(CLOUD_DIR).toString());
+            //String file = clientFileTree.getSelectionModel().getSelectedItem().getValue();
+            //System.err.println(clientPath.getText() + file);
+            Path filePath = clientFileTree.getSelectionModel().getSelectedItem().getValue();
+            Command fileMessageCommand = new FileMessageCommand(filePath.getFileName().toString(),Files.readAllBytes(filePath) );
             os.writeObject(fileMessageCommand);
             os.flush();
-            log.info("Client created File message command. File: " + Paths.get(ROOT_DIR,file) + " to dir: " + Paths.get(CLOUD_DIR));
+            log.info("Client created File message command.");
         } catch (IOException e) {
-            e.printStackTrace();
+            log.info("Не смог отправить файл", e);
         }
     }
 
@@ -232,7 +308,7 @@ public class Controller implements Initializable {
     @FXML
     private void onClientUpButtonClicked () throws IOException {
         if (!Paths.get(clientPath.getText()).toString().equals(ROOT_DIR)) {
-            loadClientPart(Paths.get(clientPath.getText()).getParent().toString());
+            loadClientPart(Paths.get(clientPath.getText()).getParent());
         }
 
 
@@ -240,8 +316,12 @@ public class Controller implements Initializable {
 
     @FXML
     private void onUpCloudButtonClicked () {
-        if (!Paths.get(cloudPath.getText()).toString().equals(CLOUD_DIR)) {
-            loadCloudPart(Paths.get(cloudPath.getText()).getParent().toString());
+        try {
+            os.writeObject(new FileRequestCommand());
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
     }
 }
