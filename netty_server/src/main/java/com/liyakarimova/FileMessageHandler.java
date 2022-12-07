@@ -82,8 +82,8 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
                 case PATH_UP_REQUEST -> {
                     if (!(currentPath.equals(ROOT))) {
                         currentPath = currentPath.getParent();
-                        PathResponseCommand pathResponseCommand = new PathResponseCommand(currentPath.toString());
-                        ctx.writeAndFlush(pathResponseCommand);
+                        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+                        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
                     }
                 }
 

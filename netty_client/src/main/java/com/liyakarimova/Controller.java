@@ -168,6 +168,7 @@ public class Controller implements Initializable {
                         super.updateItem(item, empty);
                         if (empty || item == null || item.getName() == null) {
                             setText("");
+                            setGraphic(null);
                         } else {
                             if (item.isDir()) {
                                 setGraphic(new ImageView(new Image("/icons/folder.png",15,15,false,false)));
@@ -181,7 +182,7 @@ public class Controller implements Initializable {
         });
 
         cloudListView.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
+            if (event.getClickCount() == 2 && cloudListView.getSelectionModel().getSelectedItem() != null) {
                 try {
                     os.writeObject(new PathInRequestCommand(cloudListView.getSelectionModel().getSelectedItem().getName()));
                     os.flush();
@@ -246,32 +247,7 @@ public class Controller implements Initializable {
         }
     }
 
-    private void loadCloudTree (String currentPath, List<String> fileList) {
-//        TreeItem <String> root = new TreeItem<>(currentPath);
-//        cloudTreeView.setRoot(root);
-//        root.setExpanded(true);
-//        cloudPath.setText(currentPath);
-//
-//        findCloudChild(currentPath);
-//
-//        for (String s:currentCloudPathChilds) {
-//            TreeItem <String> file = new TreeItem<>(s);
-//            root.getChildren().add(file);
-//        }
 
-    }
-
-    private void findCloudChild (String currentPath) {
-        try {
-            ListRequestCommand listRequestCommand = new ListRequestCommand();
-            listRequestCommand.setPath(currentPath);
-            os.writeObject(listRequestCommand);
-            os.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
 
     @FXML
     private void onSendToCloudButtonClicked () {
