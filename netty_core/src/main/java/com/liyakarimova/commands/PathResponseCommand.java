@@ -6,6 +6,10 @@ public class PathResponseCommand extends Command {
 
     private String currentPath;
 
+    public PathResponseCommand(String currentPath) {
+        this.currentPath = currentPath;
+    }
+
     @Override
     public CommandType getType() {
         return CommandType.PATH_RESPONSE;

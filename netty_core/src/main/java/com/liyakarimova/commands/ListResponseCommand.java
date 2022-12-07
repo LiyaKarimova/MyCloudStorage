@@ -1,34 +1,43 @@
 package com.liyakarimova.commands;
 
-import java.util.List;
+import com.liyakarimova.CloudItem;
+import com.liyakarimova.services.FilesInDirService;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
 public class ListResponseCommand  extends Command {
 
-    private List<String> filesList;
-
-    private List <String> directoriesList;
+    private List<CloudItem> filesList;
 
 
+    private String currentPath;
 
+
+
+
+    public ListResponseCommand(String currentPath) {
+        this.currentPath = currentPath;
+        FilesInDirService filesInDirService = new FilesInDirService();
+        this.filesList = filesInDirService.findAllFilesInDir(currentPath);
+    }
 
     @Override
     public CommandType getType() {
         return CommandType.LIST_RESPONSE;
     }
 
-    public List<String> getFilesList() {
+    public List<CloudItem> getFilesList() {
         return filesList;
     }
 
-    public void setFilesList(List<String> filesList) {
-        this.filesList = filesList;
-    }
 
-    public List<String> getDirectoriesList() {
-        return directoriesList;
-    }
 
-    public void setDirectoriesList(List<String> directoriesList) {
-        this.directoriesList = directoriesList;
-    }
+
+
 }

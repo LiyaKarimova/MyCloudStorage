@@ -22,6 +22,14 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
     }
 
     @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        log.debug("Channel active");
+        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+    }
+
+    @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command cmd) throws Exception {
 ////        Files.write(
 ////                ROOT.resolve(fileMessage.getName()),
@@ -37,11 +45,7 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
             switch (cmd.getType()) {
                 case LIST_REQUEST -> {
                     log.info("Server started list request command");
-                    ListResponseCommand listResponseCommand = new ListResponseCommand();
-                    FilesInDirService filesInDirService = new FilesInDirService();
-                    listResponseCommand.setFilesList(filesInDirService.findAllFilesInDir(ROOT));
-                    listResponseCommand.setDirectoriesList(filesInDirService.findAllDirInDir(ROOT));
-                    ctx.writeAndFlush(listResponseCommand);
+                    ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
                     log.info("Response list command sent");
 
                 }
@@ -58,8 +62,7 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
 
                 case PATH_REQUEST -> {
                     log.info("Server PATH REQUEST COMMAND. Current dir: " + currentPath.toString());
-                    PathResponseCommand pathResponseCommand = new PathResponseCommand();
-                    pathResponseCommand.setCurrentPath(currentPath.toString());
+                    PathResponseCommand pathResponseCommand = new PathResponseCommand(currentPath.toString());
                     ctx.writeAndFlush(pathResponseCommand);
                     log.info(pathResponseCommand.getCurrentPath().toString());
 
@@ -68,8 +71,7 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
                 case PATH_UP_REQUEST -> {
                     if (!(currentPath.equals(ROOT))) {
                         currentPath = currentPath.getParent();
-                        PathResponseCommand pathResponseCommand = new PathResponseCommand();
-                        pathResponseCommand.setCurrentPath(currentPath.toString());
+                        PathResponseCommand pathResponseCommand = new PathResponseCommand(currentPath.toString());
                         ctx.writeAndFlush(pathResponseCommand);
                     }
                 }
