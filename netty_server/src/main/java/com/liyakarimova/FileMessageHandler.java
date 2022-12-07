@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -47,8 +48,18 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
                     log.info("Server started list request command");
                     ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
                     log.info("Response list command sent");
-
                 }
+
+                case PATH_IN_REQUEST -> {
+                    PathInRequestCommand pathInRequestCommand = (PathInRequestCommand) cmd;
+                    Path path = currentPath.resolve(Paths.get(pathInRequestCommand.getPathIn()));
+                    if (Files.isDirectory(path)) {
+                        currentPath = path;
+                        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+                        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+                    }
+                }
+
 
                 case FILE_MESSAGE -> {
                     FileMessageCommand fileMessageCommand = (FileMessageCommand)cmd;

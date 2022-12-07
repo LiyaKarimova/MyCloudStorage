@@ -157,7 +157,6 @@ public class Controller implements Initializable {
         for (CloudItem c: files) {
             cloudListView.getItems().add (c);
         }
-        //cloudListView.getItems().addAll(files);
 
 
         cloudListView.setCellFactory(new Callback<ListView<CloudItem>, ListCell<CloudItem>>() {
@@ -178,6 +177,17 @@ public class Controller implements Initializable {
                     }
                 };
                 return cell;
+            }
+        });
+
+        cloudListView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                try {
+                    os.writeObject(new PathInRequestCommand(cloudListView.getSelectionModel().getSelectedItem().getName()));
+                    os.flush();
+                } catch (IOException e) {
+                    log.info("Не удалось отправить PathInRequestCommand", e);
+                }
             }
         });
 
