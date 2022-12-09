@@ -32,7 +32,7 @@ public class Controller implements Initializable {
     private String currentCloudDir;
 
     //текущая директория клиента
-    private String currentClientDir;
+    private Path currentClientDir;
 
     @FXML
     private TreeView <Path> clientFileTree;
@@ -58,7 +58,8 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            loadClientPart(Paths.get(ROOT_DIR));
+            currentClientDir = Paths.get(ROOT_DIR);
+            loadClientPart(currentClientDir);
 
             Socket socket = new Socket("localhost", 8189);
             os = new ObjectEncoderOutputStream(socket.getOutputStream());
@@ -67,35 +68,31 @@ public class Controller implements Initializable {
                 try {
                     while (true) {
                         Command msg = (Command) is.readObject();
-                        System.err.println("Server command type: " + msg.getType());
+                        System.err.println("Client command type: " + msg.getType());
                         switch (msg.getType()) {
                             case LIST_RESPONSE -> {
-                                ListResponseCommand listResponseCommand = (ListResponseCommand) msg;
                                 Platform.runLater(() -> {
                                     loadCloudPart(((ListResponseCommand) msg).getFilesList());
                                 });
                             }
                             case FILE_MESSAGE -> {
+                                FileMessageCommand fileMessageCommand = (FileMessageCommand)msg;
+                                System.err.println(currentClientDir.resolve(fileMessageCommand.getName()).toString());
+                                Files.write(currentClientDir.resolve(fileMessageCommand.getName()),fileMessageCommand.getBytes());
+                                Platform.runLater(() -> {
+                                    loadClientPart(currentClientDir);
+                                });
 
                             }
 
                             case FILE_REQUEST -> {
                                 log.info("Client received FILE REQUEST COMMAND");
-                                FileRequestCommand fileRequestCommand = (FileRequestCommand)msg;
-                                String alertMessage;
-                                System.err.println(fileRequestCommand.isFileMovedCorrect());
-                                if (fileRequestCommand.isFileMovedCorrect()) {
-                                    alertMessage = "Файл успешно добавлен в облако";
-                                } else {
-                                    alertMessage = "Ошибка!Файл не добавлен";
-                                }
+                                //FileRequestCommand fileRequestCommand = (FileRequestCommand)msg;
                                 Platform.runLater(() -> {
                                     updateCloudPart();
-                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                                    alert.setContentText(alertMessage);
-                                    alert.showAndWait();
                                 });
                             }
+
 
                             case PATH_RESPONSE -> {
                                 PathResponseCommand pathResponseCommand = (PathResponseCommand) msg;
@@ -226,6 +223,7 @@ public class Controller implements Initializable {
                 if (tree.getSelectionModel().getSelectedItem() != null) {
                     Path file = tree.getSelectionModel().getSelectedItem().getValue();
                     if (Files.isDirectory(file)) {
+                        currentClientDir = file;
                         loadClientTree(file,tree,currentPath);
                     }
                 }
@@ -264,13 +262,20 @@ public class Controller implements Initializable {
 
     @FXML
     private void onLoadFromCloudButtonClicked () {
+        try {
+            os.writeObject(new FileRequestCommand(cloudListView.getSelectionModel().getSelectedItem().getName()));
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
     @FXML
     private void onClientUpButtonClicked () throws IOException {
         if (!Paths.get(clientPath.getText()).toString().equals(ROOT_DIR)) {
-            loadClientPart(Paths.get(clientPath.getText()).getParent());
+            currentClientDir = Paths.get(clientPath.getText()).getParent();
+            loadClientPart(currentClientDir);
         }
     }
 

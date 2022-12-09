@@ -6,18 +6,22 @@ import lombok.Setter;
 
 public class FileRequestCommand extends Command {
 
-    private boolean fileMovedCorrect;
+    private String fileName;
+
+    public FileRequestCommand(String fileName) {
+        this.fileName = fileName;
+    }
 
     @Override
     public CommandType getType() {
         return CommandType.FILE_REQUEST;
     }
 
-    public boolean isFileMovedCorrect() {
-        return fileMovedCorrect;
+    public String getFileName() {
+        return fileName;
     }
 
-    public void setFileMovedCorrect(boolean fileMovedCorrect) {
-        this.fileMovedCorrect = fileMovedCorrect;
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }

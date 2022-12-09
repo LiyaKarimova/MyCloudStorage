@@ -60,15 +60,18 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
                     }
                 }
 
+                case FILE_REQUEST -> {
+                   FileRequestCommand fileRequestCommand = (FileRequestCommand) cmd;
+                   log.info("Server started file request command");
+                   ctx.writeAndFlush(new FileMessageCommand(fileRequestCommand.getFileName(), Files.readAllBytes(currentPath.resolve(fileRequestCommand.getFileName()))));
+                }
+
 
                 case FILE_MESSAGE -> {
                     FileMessageCommand fileMessageCommand = (FileMessageCommand)cmd;
                     log.info("Server started file message command");
-                    FileMessageService fileMessageService = new FileMessageService();
-                    FileRequestCommand fileRequestCommand = new FileRequestCommand();
-                    //System.err.println(fileMessageService.sendFile(fileMessageCommand.getName(), fileMessageCommand.getBytes(), currentPath.toString()));
-                    fileRequestCommand.setFileMovedCorrect(fileMessageService.sendFile(fileMessageCommand.getName(),fileMessageCommand.getBytes(),currentPath.toString()));
-                    ctx.writeAndFlush(fileRequestCommand);
+                    Files.write(currentPath.resolve(fileMessageCommand.getName()),fileMessageCommand.getBytes());
+                    ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
                 }
 
                 case PATH_REQUEST -> {
