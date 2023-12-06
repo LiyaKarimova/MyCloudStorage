@@ -1,15 +1,13 @@
 package com.liyakarimova;
 
-import com.liyakarimova.commands.Command;
-import com.liyakarimova.commands.FileMessageCommand;
-import com.liyakarimova.commands.FileRequestCommand;
-import com.liyakarimova.commands.ListResponseCommand;
+import com.liyakarimova.commands.*;
 import com.liyakarimova.services.FileMessageService;
 import com.liyakarimova.services.FilesInDirService;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -17,6 +15,20 @@ import java.nio.file.Paths;
 public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
 
     private static final Path ROOT = Paths.get("netty_server", "root");
+
+    private Path currentPath;
+
+    public FileMessageHandler() {
+        this.currentPath = ROOT;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        log.debug("Channel active");
+        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command cmd) throws Exception {
@@ -33,23 +45,49 @@ public class FileMessageHandler extends SimpleChannelInboundHandler<Command> {
         } else {
             switch (cmd.getType()) {
                 case LIST_REQUEST -> {
-                    log.info("Server started list request comand");
-                    ListResponseCommand listResponseCommand = new ListResponseCommand();
-                    FilesInDirService filesInDirService = new FilesInDirService();
-                    listResponseCommand.setFileList(filesInDirService.findAllFilesInDir(ROOT));
-                    ctx.writeAndFlush(listResponseCommand);
+                    log.info("Server started list request command");
+                    ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
                     log.info("Response list command sent");
+                }
+
+                case PATH_IN_REQUEST -> {
+                    PathInRequestCommand pathInRequestCommand = (PathInRequestCommand) cmd;
+                    Path path = currentPath.resolve(Paths.get(pathInRequestCommand.getPathIn()));
+                    if (Files.isDirectory(path)) {
+                        currentPath = path;
+                        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+                        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+                    }
+                }
+
+                case FILE_REQUEST -> {
+                   FileRequestCommand fileRequestCommand = (FileRequestCommand) cmd;
+                   log.info("Server started file request command");
+                   ctx.writeAndFlush(new FileMessageCommand(fileRequestCommand.getFileName(), Files.readAllBytes(currentPath.resolve(fileRequestCommand.getFileName()))));
+                }
+
+
+                case FILE_MESSAGE -> {
+                    FileMessageCommand fileMessageCommand = (FileMessageCommand)cmd;
+                    log.info("Server started file message command");
+                    Files.write(currentPath.resolve(fileMessageCommand.getName()),fileMessageCommand.getBytes());
+                    ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+                }
+
+                case PATH_REQUEST -> {
+                    log.info("Server PATH REQUEST COMMAND. Current dir: " + currentPath.toString());
+                    PathResponseCommand pathResponseCommand = new PathResponseCommand(currentPath.toString());
+                    ctx.writeAndFlush(pathResponseCommand);
+                    log.info(pathResponseCommand.getCurrentPath().toString());
 
                 }
 
-                case FILE_MESSAGE -> {
-
-                    FileMessageCommand fileMessageCommand = (FileMessageCommand)cmd;
-                    log.info("Server started file message command");
-                    FileMessageService fileMessageService = new FileMessageService();
-                    FileRequestCommand fileRequestCommand = new FileRequestCommand();
-                    fileRequestCommand.setFileMovedCorrect(fileMessageService.sendFile(Paths.get(fileMessageCommand.getFilePath()),Paths.get(fileMessageCommand.getToDir())));
-                    ctx.writeAndFlush(new FileRequestCommand());
+                case PATH_UP_REQUEST -> {
+                    if (!(currentPath.equals(ROOT))) {
+                        currentPath = currentPath.getParent();
+                        ctx.writeAndFlush(new PathResponseCommand(currentPath.toString()));
+                        ctx.writeAndFlush(new ListResponseCommand(currentPath.toString()));
+                    }
                 }
 
             }

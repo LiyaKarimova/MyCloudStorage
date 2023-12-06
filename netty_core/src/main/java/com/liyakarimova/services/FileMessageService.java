@@ -11,16 +11,16 @@ import java.nio.file.Paths;
 @Slf4j
 public class FileMessageService {
 
-    public boolean sendFile (Path fromPath, Path toPath) throws IOException {
+    public boolean sendFile (String name, byte [] bytes, String toPath) {
         try{
             log.debug("Server started sending file");
-            Path newPath = Paths.get(toPath.toString(),fromPath.getFileName().toString());
+            Path newPath = Paths.get(toPath, name);
             if (!Files.exists(newPath)) {
                 Files.createFile(newPath);
             }
             Files.write(
                     newPath,
-                    Files.readAllBytes(fromPath));
+                    bytes);
             return true;
 
         } catch (Exception e) {

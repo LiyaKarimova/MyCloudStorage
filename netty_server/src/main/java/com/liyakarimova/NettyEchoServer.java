@@ -12,41 +12,37 @@ import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import lombok.extern.slf4j.Slf4j;
 
-// send string
-// receive string
 @Slf4j
 public class NettyEchoServer {
 
     public NettyEchoServer() {
-
         EventLoopGroup auth = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
 
-        try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
+        ServerBootstrap bootstrap = new ServerBootstrap();
 
-            ChannelFuture channelFuture = bootstrap.group(auth, worker)
+        try {
+            ChannelFuture channelFuture = bootstrap.group(auth,worker)
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        protected void initChannel(SocketChannel channel) throws Exception {
-                            channel.pipeline().addLast(
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            socketChannel.pipeline().addLast(
                                     new ObjectEncoder(),
                                     new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
-                                    new FileMessageHandler()
+                                   new AuthHandler(),
+                                   new FileMessageHandler()
                             );
                         }
                     })
                     .bind(8189)
                     .sync();
-            log.debug("Server started...");
-            channelFuture.channel().closeFuture().sync(); // block
-        } catch (Exception e) {
-            log.error("Server exception: Stacktrace: ", e);
-        } finally {
-            auth.shutdownGracefully();
-            worker.shutdownGracefully();
+            log.debug("Server started");
+            channelFuture.channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
     }
 
     public static void main(String[] args) {
@@ -54,3 +50,4 @@ public class NettyEchoServer {
     }
 
 }
+
