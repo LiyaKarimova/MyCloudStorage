@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.liyakarimova.Controller">
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.liyakarimova.CloudWindowController">
    <children>
       <AnchorPane prefHeight="484.0" prefWidth="330.0">
          <HBox layoutX="14.0" layoutY="14.0" prefHeight="463.0" prefWidth="716.0">
@@ -72,11 +72,6 @@
                      <ListView fx:id="cloudListView" prefHeight="426.0" prefWidth="319.0" />
                   </children>
                </VBox>
-            </children>
-         </HBox>
-         <HBox layoutX="15.0" layoutY="482.0" prefHeight="44.0" prefWidth="301.0" spacing="50.0">
-            <children>
-               <Button mnemonicParsing="false" onAction="#onLoginButtonClicked" text="Вход" />
             </children>
          </HBox>
          <padding>

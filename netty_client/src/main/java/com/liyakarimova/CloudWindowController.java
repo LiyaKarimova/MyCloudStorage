@@ -23,7 +23,7 @@ import java.util.ResourceBundle;
 
 
 @Slf4j
-public class Controller implements Initializable {
+public class CloudWindowController  implements Initializable {
 
     //корневая директория клиента
     private static String ROOT_DIR = "netty_client/root";
@@ -115,11 +115,8 @@ public class Controller implements Initializable {
         }
     }
 
-    @FXML
-    private void onLoginButtonClicked () {
-        requestCurrentCloudDir();
-        requestList();
-    }
+
+
 
     private void requestCurrentCloudDir () {
         Command pathRequestCommand = new PathRequestCommand();

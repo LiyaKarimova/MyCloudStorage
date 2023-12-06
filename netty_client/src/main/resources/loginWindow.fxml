@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane prefHeight="400.0" prefWidth="489.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.liyakarimova.LoginWindowController">
+   <children>
+      <ImageView fitHeight="400.0" fitWidth="600.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@icons/Снимок%20экрана%202022-12-11%20в%2022.57.21.png" />
+         </image>
+      </ImageView>
+      <AnchorPane layoutX="149.0" layoutY="68.0" prefHeight="263.0" prefWidth="186.0" AnchorPane.bottomAnchor="69.0" AnchorPane.leftAnchor="149.0" AnchorPane.rightAnchor="163.0" AnchorPane.topAnchor="68.0">
+         <children>
+            <VBox alignment="CENTER" layoutX="1.0" layoutY="41.0" prefHeight="263.0" prefWidth="186.0" spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="1.0" AnchorPane.rightAnchor="-1.0" AnchorPane.topAnchor="0.0">
+               <children>
+                  <TextField fx:id="loginField" promptText="Логин" />
+                  <PasswordField fx:id="passwordField" promptText="Пароль" />
+                  <VBox alignment="CENTER" prefHeight="36.0" prefWidth="186.0">
+                     <children>
+                        <Button fx:id="logButton" mnemonicParsing="false" style="-fx-background-color: #BC8F8F#BC8F8F;" text="Вход" />
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>

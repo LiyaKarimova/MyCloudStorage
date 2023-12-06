@@ -7,17 +7,15 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 @Slf4j
-public class NettyEchoServer2 {
+public class NettyEchoServer {
 
-    public NettyEchoServer2() {
+    public NettyEchoServer() {
         EventLoopGroup auth = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
 
@@ -32,6 +30,7 @@ public class NettyEchoServer2 {
                             socketChannel.pipeline().addLast(
                                     new ObjectEncoder(),
                                     new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
+                                   new AuthHandler(),
                                    new FileMessageHandler()
                             );
                         }
@@ -47,7 +46,7 @@ public class NettyEchoServer2 {
     }
 
     public static void main(String[] args) {
-        new NettyEchoServer2();
+        new NettyEchoServer();
     }
 
 }
